@@ -14,10 +14,10 @@ func StartBidEngine() {
 
 	go func() {
 		for {
-			log.Println("🚀 Running Bid Optimization Engine...")
+			log.Println("Running Bid Optimization Engine...")
 
 			// Get all active campaigns
-			campaigns := campaign.GetAllCampaigns()
+			campaigns, _ := campaign.GetAllCampaigns()
 
 			// Process each campaign, add it to the priority queue with its bid
 			for _, c := range campaigns {
@@ -32,7 +32,7 @@ func StartBidEngine() {
 			for pqLen := priorityqueue.GetQueueLength(); pqLen > 0; pqLen = priorityqueue.GetQueueLength() {
 				bestBid := priorityqueue.DequeueCampaign()
 				if bestBid != nil {
-					log.Printf("✅ Placing bid for Campaign: %s, Platform: %s, Amount: $%.2f\n", bestBid.CampaignID, bestBid.Platform, bestBid.BidAmount)
+					log.Printf("Placing bid for Campaign: %s, Platform: %s, Amount: $%.2f\n", bestBid.CampaignID, bestBid.Platform, bestBid.BidAmount)
 				}
 			}
 

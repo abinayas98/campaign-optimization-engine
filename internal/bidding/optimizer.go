@@ -1,38 +1,37 @@
 package bidding
 
 import (
+	"campaign-optimization-engine/internal/data-adapters"
 	"campaign-optimization-engine/internal/models"
 	"campaign-optimization-engine/internal/predictive_analytics"
 	"log"
 )
 
-// Mock historical CPC and CVR data
-var historicalCPC = map[string][]float64{
-	"google":   {1.5, 1.6, 1.4, 1.8, 1.7},
-	"facebook": {1.2, 1.3, 1.1, 1.4, 1.5},
-}
-
-var historicalCVR = map[string][]float64{
-	"google":   {3.0, 3.2, 2.9, 3.4, 3.1},
-	"facebook": {4.0, 4.1, 3.8, 4.3, 4.2},
-}
-
-// OptimizeBid determines the best bid for a campaign
+// OptimizeBid determines the best bid for a campaign using both real-time and historical data
 func OptimizeBid(c models.Campaign) models.BidResult {
 	bestPlatform := ""
 	bestBidAmount := 0.0
 
 	// Iterate through platforms and find the best bid
 	for _, platform := range c.Platforms {
-		// Get historical data
-		cpcHistory := historicalCPC[platform]
-		cvrHistory := historicalCVR[platform]
+		// Fetch real-time data from Redis
+		realTimeCPC, realTimeCVR, err := data_adapters.GetCachedPrediction(platform)
+		if err != nil {
+			log.Printf("⚠️ Using fallback prediction for %s: %v", platform, err)
+			// Fallback to historical data if real-time data is not available
+			realTimeCPC = predictive_analytics.GenerateRandomCPC()
+			realTimeCVR = predictive_analytics.GenerateRandomCVR()
+		}
 
-		// Predict CPC & CVR using ML
-		predictedCPC := predictive_analytics.PredictCPC(cpcHistory)
-		predictedCVR := predictive_analytics.PredictCVR(cvrHistory)
+		// Get historical data for the platform
+		historicalCPC := predictive_analytics.HistoricalCPCData[platform]
+		historicalCVR := predictive_analytics.HistoricalCVRData[platform]
 
-		// Calculate bid amount
+		// Predict CPC & CVR using historical data and real-time data
+		predictedCPC := predictive_analytics.PredictCPC(historicalCPC, realTimeCPC)
+		predictedCVR := predictive_analytics.PredictCVR(historicalCVR, realTimeCVR)
+
+		// Calculate the bid amount
 		bidAmount := predictedCPC * (1 + (predictedCVR / 10))
 
 		log.Printf("📊 Campaign: %s, Platform: %s, Predicted CPC: $%.2f, Predicted CVR: %.2f%%, Bid: $%.2f\n",
