@@ -16,7 +16,7 @@ func StartAPI() error {
 	// Start server
 	err := e.Start(":8080")
 	if err != nil {
-		log.Fatalf("Error starting API server: %v", err)
+		log.Fatalf("Error starting API server. Error: %v", err)
 	}
 	return err
 }
