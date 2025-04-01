@@ -9,20 +9,26 @@ import (
 
 // GetCampaigns returns all campaigns
 func GetCampaigns(c echo.Context) error {
-	// Call the service to get campaigns
-	campaigns := GetAllCampaigns() // Get campaigns from service
+	// Get campaigns from service (which fetches from DB)
+	campaigns, err := GetAllCampaigns()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
 	return c.JSON(http.StatusOK, campaigns)
 }
 
 // CreateCampaign adds a new campaign
 func CreateCampaign(c echo.Context) error {
-	var newCampaign Campaign
+	var newCampaign models.Campaign
 	if err := c.Bind(&newCampaign); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	// Call the service to add the new campaign
-	AddCampaign(models.Campaign(newCampaign)) // Add campaign to service
+	// Add the campaign using the service (which stores it in DB)
+	err := AddCampaign(&newCampaign)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
 
 	return c.JSON(http.StatusCreated, newCampaign)
 }
