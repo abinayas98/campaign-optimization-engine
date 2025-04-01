@@ -12,7 +12,8 @@ import (
 var redisClient *redis.Client
 var ctx = context.Background()
 
-func InitRedis() {
+// InitRedis initializes the Redis client
+func InitRedis() *redis.Client {
 	redisClient = redis.NewClient(&redis.Options{
 		Addr: "localhost:6379", // Default Redis address
 	})
@@ -21,9 +22,10 @@ func InitRedis() {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 	fmt.Println("Redis connection successful")
+	return redisClient
 }
 
-// Cache CPC and CVR Predictions for a Platform
+// CachePrediction stores both CPC and CVR as a single value (serialized as a string) in Redis
 func CachePrediction(platform string, predictedCPC, predictedCVR float64) {
 	cacheKey := fmt.Sprintf("prediction:%s", platform)
 
@@ -39,7 +41,7 @@ func CachePrediction(platform string, predictedCPC, predictedCVR float64) {
 	}
 }
 
-// Get Cached Prediction for a Platform
+// GetCachedPrediction retrieves the cached CPC and CVR for a given platform
 func GetCachedPrediction(platform string) (float64, float64, error) {
 	cacheKey := fmt.Sprintf("prediction:%s", platform)
 
@@ -57,4 +59,30 @@ func GetCachedPrediction(platform string) (float64, float64, error) {
 	}
 
 	return predictedCPC, predictedCVR, nil
+}
+
+// UpdateCPC updates the CPC value in Redis for a given platform
+func UpdateCPC(platform string, cpc float64) {
+	cacheKey := fmt.Sprintf("cpc:%s", platform)
+
+	// Cache the CPC value with a TTL (e.g., 1 hour)
+	err := redisClient.Set(ctx, cacheKey, cpc, 1*time.Hour).Err()
+	if err != nil {
+		log.Printf("Error updating CPC for %s: %v", platform, err)
+	} else {
+		log.Printf("Successfully updated CPC for %s: $%.2f", platform, cpc)
+	}
+}
+
+// UpdateCVR updates the CVR value in Redis for a given platform
+func UpdateCVR(platform string, cvr float64) {
+	cacheKey := fmt.Sprintf("cvr:%s", platform)
+
+	// Cache the CVR value with a TTL (e.g., 1 hour)
+	err := redisClient.Set(ctx, cacheKey, cvr, 1*time.Hour).Err()
+	if err != nil {
+		log.Printf("Error updating CVR for %s: %v", platform, err)
+	} else {
+		log.Printf("Successfully updated CVR for %s: %.2f%%", platform, cvr)
+	}
 }
