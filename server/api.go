@@ -11,6 +11,7 @@ func StartAPI() error {
 
 	// Define routes
 	e.GET("/api/campaigns", campaign.GetCampaigns)
+	e.GET("/api/campaign/:id", campaign.GetCampaignById)
 	e.POST("/api/campaign", campaign.CreateCampaign)
 
 	// Start server

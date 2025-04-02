@@ -4,9 +4,15 @@ go 1.24.1
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/jinzhu/gorm v1.9.16
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/sajari/regression v1.0.1
 
+)
+
+require (
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/lib/pq v1.1.1 // indirect
 )
 
 require (

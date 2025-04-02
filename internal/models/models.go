@@ -12,6 +12,7 @@ type Campaign struct {
 	CPC         float64   `json:"cpc"`       // Cost per Click
 	CVR         float64   `json:"cvr"`       // Conversion Rate
 	CreatedAt   time.Time `json:"created_at"`
+	State       bool      `json:"state"`
 }
 
 // BidResult stores bid decision

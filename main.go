@@ -3,17 +3,21 @@
 package main
 
 import (
-	"campaign-optimization-engine/internal/bidding"
-	data_adapters "campaign-optimization-engine/internal/data-adapters"
-	"campaign-optimization-engine/server"
 	"log"
 	"sync"
+
+	"campaign-optimization-engine/internal/bidding"
+	"campaign-optimization-engine/internal/data-adapters"
+	"campaign-optimization-engine/server"
 )
 
 func main() {
-
 	// Initialize Redis (if using it)
 	data_adapters.InitRedis()
+
+	// Initialize the PostgreSQL database connection
+	data_adapters.InitDB()
+	defer data_adapters.CloseDB()
 
 	// Start the Bid Optimization Engine
 	bidding.StartBidEngine()

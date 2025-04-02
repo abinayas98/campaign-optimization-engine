@@ -1,29 +1,32 @@
 package priorityqueue
 
 import (
+	c "campaign-optimization-engine/internal/campaign"
+	data_adapters "campaign-optimization-engine/internal/data-adapters"
 	"campaign-optimization-engine/internal/models"
 	"container/heap"
 	"log"
+	"sync"
 )
 
 // PriorityQueue represents a heap-based priority queue
-type PriorityQueue []*models.BidResult
-
-// Implement the heap.Interface
-func (pq PriorityQueue) Len() int { return len(pq) }
-func (pq PriorityQueue) Less(i, j int) bool {
-	// Prioritize campaigns with higher bid amount
-	return pq[i].BidAmount > pq[j].BidAmount
-}
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
+type PriorityQueue struct {
+	queue PriorityQueueHeap
+	mu    sync.Mutex
 }
 
-func (pq *PriorityQueue) Push(x interface{}) {
+// PriorityQueueHeap implements heap.Interface
+type PriorityQueueHeap []*models.BidResult
+
+func (pq PriorityQueueHeap) Len() int { return len(pq) }
+func (pq PriorityQueueHeap) Less(i, j int) bool {
+	return pq[i].BidAmount > pq[j].BidAmount // Higher bid has higher priority
+}
+func (pq PriorityQueueHeap) Swap(i, j int) { pq[i], pq[j] = pq[j], pq[i] }
+func (pq *PriorityQueueHeap) Push(x interface{}) {
 	*pq = append(*pq, x.(*models.BidResult))
 }
-
-func (pq *PriorityQueue) Pop() interface{} {
+func (pq *PriorityQueueHeap) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	x := old[n-1]
@@ -31,33 +34,65 @@ func (pq *PriorityQueue) Pop() interface{} {
 	return x
 }
 
-// Global priority queue
 var pq PriorityQueue
 
 // InitQueue initializes the priority queue
 func InitQueue() {
-	pq = make(PriorityQueue, 0)
-	heap.Init(&pq)
+	pq.queue = make(PriorityQueueHeap, 0)
+	heap.Init(&pq.queue)
 }
 
 // EnqueueCampaign adds a bid result to the priority queue
 func EnqueueCampaign(bid *models.BidResult) {
-	heap.Push(&pq, bid)
-	log.Printf("Enqueued Campaign: %s, Bid Amount: $%.2f", bid.CampaignID, bid.BidAmount)
+	pq.mu.Lock()
+	defer pq.mu.Unlock()
+	heap.Push(&pq.queue, bid)
+	log.Printf("✅ Enqueued Campaign: %s, Bid Amount: $%.2f", bid.CampaignID, bid.BidAmount)
 }
 
-// DequeueCampaign removes and returns the highest-priority campaign (highest bid)
 func DequeueCampaign() *models.BidResult {
-	if len(pq) == 0 {
-		log.Println("⚠️ Priority queue is empty")
+	pq.mu.Lock()
+	defer pq.mu.Unlock() // Ensure unlock even if there's an error
+
+	if pq.queue.Len() == 0 {
 		return nil
 	}
-	// Pop the highest priority bid result
-	bestBid := heap.Pop(&pq).(*models.BidResult)
-	return bestBid
+	return heap.Pop(&pq.queue).(*models.BidResult)
 }
 
-// GetQueueLength returns the current length of the queue
-func GetQueueLength() int {
-	return len(pq)
+// ProcessBids continuously dequeues and processes the highest-priority bid
+func ProcessBids() {
+	for {
+		pq.mu.Lock()
+		if pq.queue.Len() == 0 {
+			pq.mu.Unlock()
+			continue
+		}
+		bestBid := DequeueCampaign()
+		pq.mu.Unlock()
+
+		// Fetch the campaign details
+		campaign, err := c.GetCampaignByID(bestBid.CampaignID)
+		if err != nil {
+			log.Printf("⚠️ Skipping Campaign %s: Not Found", bestBid.CampaignID)
+			continue
+		}
+
+		// Ensure the campaign has enough budget left
+		if campaign.Budget >= bestBid.BidAmount {
+			// Deduct the bid amount from the campaign budget
+			campaign.Budget -= bestBid.BidAmount
+
+			// Update the campaign budget in the database
+			err = data_adapters.UpdateCampaignBudget(campaign.ID, campaign.Budget)
+			if err != nil {
+				log.Printf("⚠️ Failed to update budget for Campaign %s", campaign.ID)
+				continue
+			}
+
+			log.Printf("✅ Processed Campaign: %s, Remaining Budget: $%.2f", campaign.ID, campaign.Budget)
+		} else {
+			log.Printf("⚠️ Skipping Campaign %s due to insufficient budget", bestBid.CampaignID)
+		}
+	}
 }

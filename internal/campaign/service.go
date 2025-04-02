@@ -1,26 +1,26 @@
 package campaign
 
 import (
-	"sync"
-
+	"campaign-optimization-engine/internal/data-adapters"
 	"campaign-optimization-engine/internal/models"
 )
 
-var (
-	campaigns []models.Campaign
-	mu        sync.Mutex
-)
-
-// GetAllCampaigns returns all active campaigns
-func GetAllCampaigns() []models.Campaign {
-	mu.Lock()
-	defer mu.Unlock()
-	return campaigns
+// GetAllCampaigns returns all active campaigns from the database
+func GetAllCampaigns() ([]models.Campaign, error) {
+	return data_adapters.GetAllCampaigns()
 }
 
-// AddCampaign adds a new campaign to the list
-func AddCampaign(c models.Campaign) {
-	mu.Lock()
-	defer mu.Unlock()
-	campaigns = append(campaigns, c)
+// AddCampaign adds a new campaign to the database
+func AddCampaign(c *models.Campaign) error {
+	return data_adapters.CreateCampaign(c)
+}
+
+// GetCampaignByID fetches a campaign by its ID
+func GetCampaignByID(campaignID string) (*models.Campaign, error) {
+	return data_adapters.GetCampaignByID(campaignID)
+}
+
+// UpdateCampaignBudget updates the campaign's budget in the database
+func UpdateCampaignBudget(campaignID string, newBudget float64) error {
+	return data_adapters.UpdateCampaignBudget(campaignID, newBudget)
 }
