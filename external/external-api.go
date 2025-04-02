@@ -1,6 +1,7 @@
-package data_adapters
+package external
 
 import (
+	"campaign-optimization-engine/internal/data-adapters"
 	"encoding/json"
 	"log"
 	"math/rand"
@@ -54,8 +55,8 @@ func UpdateCPC_CVR() {
 			log.Printf("Using fallback CPC & CVR for %s", platform)
 		}
 
-		UpdateCPC(platform, cpc)
-		UpdateCVR(platform, cvr)
+		data_adapters.UpdateCPC(platform, cpc)
+		data_adapters.UpdateCVR(platform, cvr)
 
 		log.Printf("Updated %s - CPC: $%.2f, CVR: %.2f%%", platform, cpc, cvr)
 	}
