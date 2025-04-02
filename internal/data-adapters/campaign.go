@@ -20,3 +20,17 @@ func GetAllCampaigns() ([]models.Campaign, error) {
 	}
 	return campaigns, nil
 }
+
+// GetCampaignByID retrieves a campaign by its ID
+func GetCampaignByID(campaignID string) (*models.Campaign, error) {
+	var campaign models.Campaign
+	if err := DB.Where("id = ?", campaignID).First(&campaign).Error; err != nil {
+		return nil, err
+	}
+	return &campaign, nil
+}
+
+// UpdateCampaignBudget updates the budget of a specific campaign
+func UpdateCampaignBudget(campaignID string, newBudget float64) error {
+	return DB.Model(&models.Campaign{}).Where("id = ?", campaignID).Update("budget", newBudget).Error
+}

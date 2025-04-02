@@ -14,3 +14,13 @@ func GetAllCampaigns() ([]models.Campaign, error) {
 func AddCampaign(c *models.Campaign) error {
 	return data_adapters.CreateCampaign(c)
 }
+
+// GetCampaignByID fetches a campaign by its ID
+func GetCampaignByID(campaignID string) (*models.Campaign, error) {
+	return data_adapters.GetCampaignByID(campaignID)
+}
+
+// UpdateCampaignBudget updates the campaign's budget in the database
+func UpdateCampaignBudget(campaignID string, newBudget float64) error {
+	return data_adapters.UpdateCampaignBudget(campaignID, newBudget)
+}
