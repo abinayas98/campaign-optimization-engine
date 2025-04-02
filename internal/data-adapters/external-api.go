@@ -62,7 +62,7 @@ func UpdateCPC_CVR() {
 }
 
 // StartAPIUpdater runs a background job to fetch and update CPC & CVR every 10 seconds
-func StartAPIUpdater() {
+func CPCCVRUpdater() {
 	go func() {
 		for {
 			UpdateCPC_CVR()
